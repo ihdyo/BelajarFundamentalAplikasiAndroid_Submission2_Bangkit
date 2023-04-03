@@ -1,0 +1,27 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Theme.GitHub" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/gray_800</item>
+        <item name="colorPrimaryVariant">@color/gray_700</item>
+        <item name="colorOnPrimary">@color/gray_100</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/green_300</item>
+        <item name="colorSecondaryVariant">@color/blue_300</item>
+        <item name="colorOnSecondary">@color/gray_700</item>
+        <!-- Status & Navigation bar color. -->
+        <item name="android:statusBarColor">@color/gray_800</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <!-- Customize your theme here. -->
+        <item name="android:windowBackground">@color/gray_800</item>
+    </style>
+
+    <style name="SplashTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_dark</item>
+        <!-- Status & Navigation bar color. -->
+        <item name="android:statusBarColor">@color/gray_800</item>
+        <item name="android:navigationBarColor">@color/gray_900</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+</resources>

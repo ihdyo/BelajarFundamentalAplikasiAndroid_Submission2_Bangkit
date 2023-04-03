@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">GitHub User</string>
+
+    <string name="github_username">GitHub Username</string>
+    <string name="search">Search</string>
+    <string name="setting">Setting</string>
+    <string name="favorite">Favorite</string>
+    <string name="theme">Theme</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string name="more">More</string>
+    <string name="no_follower">This user has no followers</string>
+    <string name="no_following">This user does not have any followed accounts</string>
+    <string name="no_favorites_user">No favorite user</string>
+    <string name="added_to_favorite">Added to favorite</string>
+    <string name="deleted_from_favorite">Deleted from favorite</string>
+
+    <string name="profile">Profile</string>
+    <string name="user_name">Username</string>
+    <string name="open_on_github">Open on GitHub</string>
+    <string name="name">Name</string>
+    <string name="repositories">Repositories</string>
+    <string name="gists">Gists</string>
+    <string name="followers">Followers</string>
+    <string name="following">Following</string>
+    <string name="bio">Bio</string>
+    <string name="company">Company</string>
+    <string name="location">Location</string>
+    <string name="sites">Sites</string>
+    <string name="n">n</string>
+
+</resources>
