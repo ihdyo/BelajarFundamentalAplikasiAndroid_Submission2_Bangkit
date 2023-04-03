@@ -16,7 +16,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.ihdyo.githubuser.util.EspressoIdlingResource
 import com.ihdyo.githubuser.R
 import com.ihdyo.githubuser.ui.adapter.UserAdapter
 import com.ihdyo.githubuser.data.Result
@@ -63,7 +62,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        EspressoIdlingResource.increment()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -78,7 +76,6 @@ class MainActivity : AppCompatActivity() {
             queryHint = getString(R.string.github_username)
             setOnQueryTextListener(object : SearchView.OnQueryTextListener {
                 override fun onQueryTextSubmit(query: String?): Boolean {
-                    EspressoIdlingResource.increment()
                     mainViewModel.searchByUsername(query ?: "")
                     clearFocus()
                     return true
@@ -151,7 +148,6 @@ class MainActivity : AppCompatActivity() {
 
                 })
                 showLoading(false)
-                EspressoIdlingResource.decrement()
             }
         }
     }

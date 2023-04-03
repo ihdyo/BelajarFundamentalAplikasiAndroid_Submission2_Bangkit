@@ -7,7 +7,6 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.ihdyo.githubuser.util.EspressoIdlingResource
 import com.ihdyo.githubuser.R
 import com.ihdyo.githubuser.ui.adapter.UserAdapter
 import com.ihdyo.githubuser.data.local.UserEntity
@@ -34,7 +33,6 @@ class FavoriteActivity : AppCompatActivity() {
         lifecycleScope.launchWhenStarted {
             launch {
                 favoriteViewModel.favorite.collect {
-                    EspressoIdlingResource.increment()
                     if (it.isNotEmpty()) showFavoriteUsers(it)
                     else showMessage()
                 }
@@ -50,8 +48,6 @@ class FavoriteActivity : AppCompatActivity() {
     private fun showMessage() {
         binding.tvMessage.visibility = View.VISIBLE
         binding.rvFavorite.visibility = View.GONE
-
-        EspressoIdlingResource.decrement()
     }
 
     private fun showFavoriteUsers(users: List<UserEntity>) {
@@ -83,8 +79,6 @@ class FavoriteActivity : AppCompatActivity() {
                 goToDetailUser(user)
             }
         })
-
-        EspressoIdlingResource.decrement()
     }
 
     private fun goToDetailUser(user: SimpleUser) {

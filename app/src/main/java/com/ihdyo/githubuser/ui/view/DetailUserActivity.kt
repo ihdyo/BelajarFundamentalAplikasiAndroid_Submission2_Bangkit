@@ -20,7 +20,6 @@ import com.ihdyo.githubuser.data.local.UserEntity
 import com.ihdyo.githubuser.data.remote.response.User
 import com.ihdyo.githubuser.databinding.ActivityDetailBinding
 import com.ihdyo.githubuser.ui.viewmodel.DetailViewModel
-import com.ihdyo.githubuser.util.EspressoIdlingResource
 import com.ihdyo.githubuser.util.Helper.Companion.setAndVisible
 import com.ihdyo.githubuser.util.Helper.Companion.setImageGlide
 import dagger.hilt.android.AndroidEntryPoint
@@ -71,7 +70,6 @@ class DetailUserActivity : AppCompatActivity(), View.OnClickListener {
 
     override fun onStart() {
         super.onStart()
-        EspressoIdlingResource.increment()
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -131,7 +129,6 @@ class DetailUserActivity : AppCompatActivity(), View.OnClickListener {
                     profileUrl = user.htmlUrl
                 }
                 showLoading(false)
-                EspressoIdlingResource.decrement()
             }
         }
     }
