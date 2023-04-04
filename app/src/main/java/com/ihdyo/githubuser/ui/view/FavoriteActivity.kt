@@ -9,7 +9,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ihdyo.githubuser.R
 import com.ihdyo.githubuser.ui.adapter.UserAdapter
-import com.ihdyo.githubuser.data.local.UserEntity
 import com.ihdyo.githubuser.data.remote.response.SimpleUser
 import com.ihdyo.githubuser.databinding.ActivityFavoriteBinding
 import com.ihdyo.githubuser.ui.viewmodel.FavoriteViewModel
@@ -25,16 +24,57 @@ class FavoriteActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityFavoriteBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        setToolbar(getString(R.string.favorite))
+
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.apply {
+            setDisplayShowHomeEnabled(true)
+            setDisplayHomeAsUpEnabled(true)
+            this.title = getString(R.string.favorite)
+        }
 
         lifecycleScope.launchWhenStarted {
             launch {
                 favoriteViewModel.favorite.collect {
-                    if (it.isNotEmpty()) showFavoriteUsers(it)
-                    else showMessage()
+                    if (it.isNotEmpty()) {
+                        val listUsers = ArrayList<SimpleUser>()
+                        it.forEach { user ->
+                            val data = SimpleUser(
+                                user.avatarUrl,
+                                user.id
+                            )
+
+                            listUsers.add(data)
+                        }
+
+                        val listUserAdapter = UserAdapter(listUsers)
+
+                        binding.rvFavorite.apply {
+                            layoutManager = LinearLayoutManager(this@FavoriteActivity)
+                            adapter = listUserAdapter
+                            visibility = View.VISIBLE
+                            setHasFixedSize(true)
+                        }
+
+                        binding.tvMessage.visibility = View.GONE
+
+                        listUserAdapter.setOnItemClickCallback(object :
+                            UserAdapter.OnItemClickCallback {
+                            override fun onItemClicked(user: SimpleUser) {
+                                Intent(this@FavoriteActivity,
+                                    DetailUserActivity::class.java).apply {
+                                    putExtra(DetailUserActivity.EXTRA_DETAIL, user.login)
+                                }.also {
+                                    startActivity(it)
+                                }
+                            }
+                        })
+                    }
+                    else {
+                        binding.tvMessage.visibility = View.VISIBLE
+                        binding.rvFavorite.visibility = View.GONE
+                    }
                 }
             }
         }
@@ -43,58 +83,5 @@ class FavoriteActivity : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         onBackPressed()
         return true
-    }
-
-    private fun showMessage() {
-        binding.tvMessage.visibility = View.VISIBLE
-        binding.rvFavorite.visibility = View.GONE
-    }
-
-    private fun showFavoriteUsers(users: List<UserEntity>) {
-        val listUsers = ArrayList<SimpleUser>()
-
-        users.forEach { user ->
-            val data = SimpleUser(
-                user.avatarUrl,
-                user.id
-            )
-
-            listUsers.add(data)
-        }
-
-        val listUserAdapter = UserAdapter(listUsers)
-
-        binding.rvFavorite.apply {
-            layoutManager = LinearLayoutManager(this@FavoriteActivity)
-            adapter = listUserAdapter
-            visibility = View.VISIBLE
-            setHasFixedSize(true)
-        }
-
-        binding.tvMessage.visibility = View.GONE
-
-        listUserAdapter.setOnItemClickCallback(object :
-            UserAdapter.OnItemClickCallback {
-            override fun onItemClicked(user: SimpleUser) {
-                goToDetailUser(user)
-            }
-        })
-    }
-
-    private fun goToDetailUser(user: SimpleUser) {
-        Intent(this@FavoriteActivity, DetailUserActivity::class.java).apply {
-            putExtra(DetailUserActivity.EXTRA_DETAIL, user.login)
-        }.also {
-            startActivity(it)
-        }
-    }
-
-    private fun setToolbar(title: String) {
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.apply {
-            setDisplayShowHomeEnabled(true)
-            setDisplayHomeAsUpEnabled(true)
-            this.title = title
-        }
     }
 }

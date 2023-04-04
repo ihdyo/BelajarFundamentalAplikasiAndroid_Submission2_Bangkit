@@ -21,17 +21,14 @@ import kotlinx.coroutines.launch
 @Suppress("DEPRECATION")
 @AndroidEntryPoint
 class FollowingFragment : Fragment() {
-
-    private var _binding: FragmentFollowingBinding? = null
-    private val binding get() = _binding!!
-
+    private lateinit var binding: FragmentFollowingBinding
     private val followingViewModel: FollowingViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentFollowingBinding.inflate(layoutInflater, container, false)
+        binding = FragmentFollowingBinding.inflate(layoutInflater, container, false)
         return binding.root
     }
 
@@ -42,7 +39,35 @@ class FollowingFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             launch {
                 followingViewModel.following.collect {
-                    onFollowingResultReceived(it)
+                    when (it) {
+                        is Result.Loading -> binding.pbLoading.visibility = View.VISIBLE
+                        is Result.Error -> binding.pbLoading.visibility = View.GONE
+                        is Result.Success -> {
+                            if (it.data.size > 0) {
+                                val linearLayoutManager = LinearLayoutManager(activity)
+                                val listAdapter = UserAdapter(it.data)
+
+                                binding.rvUsers.apply {
+                                    layoutManager = linearLayoutManager
+                                    adapter = listAdapter
+                                    setHasFixedSize(true)
+                                }
+
+                                listAdapter.setOnItemClickCallback(object :
+                                    UserAdapter.OnItemClickCallback {
+                                    override fun onItemClicked(user: SimpleUser) {
+                                        Intent(activity, DetailUserActivity::class.java).apply {
+                                            putExtra(DetailUserActivity.EXTRA_DETAIL, user.login)
+                                        }.also {
+                                            startActivity(it)
+                                        }
+                                    }
+
+                                })
+                            } else binding.tvStatus.visibility = View.VISIBLE
+                            binding.pbLoading.visibility = View.GONE
+                        }
+                    }
                 }
             }
             launch {
@@ -50,58 +75,6 @@ class FollowingFragment : Fragment() {
                     if (!loaded) followingViewModel.getFollowing(username)
                 }
             }
-        }
-    }
-
-    override fun onDestroy() {
-        _binding = null
-        super.onDestroy()
-    }
-
-    private fun onFollowingResultReceived(result: Result<ArrayList<SimpleUser>>) {
-        when (result) {
-            is Result.Loading -> showLoading(true)
-            is Result.Error -> {
-                showLoading(false)
-            }
-            is Result.Success -> {
-                showFollowing(result.data)
-                showLoading(false)
-            }
-        }
-    }
-
-    private fun showFollowing(users: ArrayList<SimpleUser>) {
-        if (users.size > 0) {
-            val linearLayoutManager = LinearLayoutManager(activity)
-            val listAdapter = UserAdapter(users)
-
-            binding.rvUsers.apply {
-                layoutManager = linearLayoutManager
-                adapter = listAdapter
-                setHasFixedSize(true)
-            }
-
-            listAdapter.setOnItemClickCallback(object :
-                UserAdapter.OnItemClickCallback {
-                override fun onItemClicked(user: SimpleUser) {
-                    goToDetailUser(user)
-                }
-
-            })
-        } else binding.tvStatus.visibility = View.VISIBLE
-    }
-
-    private fun showLoading(isLoading: Boolean) {
-        if (isLoading) binding.pbLoading.visibility = View.VISIBLE
-        else binding.pbLoading.visibility = View.GONE
-    }
-
-    private fun goToDetailUser(user: SimpleUser) {
-        Intent(activity, DetailUserActivity::class.java).apply {
-            putExtra(DetailUserActivity.EXTRA_DETAIL, user.login)
-        }.also {
-            startActivity(it)
         }
     }
 }

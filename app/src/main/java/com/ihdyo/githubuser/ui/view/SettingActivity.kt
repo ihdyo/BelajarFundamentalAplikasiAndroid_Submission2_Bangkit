@@ -18,17 +18,21 @@ import kotlinx.coroutines.launch
 @AndroidEntryPoint
 class SettingActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
 
-    private var _binding: ActivitySettingBinding? = null
-    private val binding get() = _binding!!
+    private lateinit var binding: ActivitySettingBinding
 
     private val settingViewModel: SettingViewModel by viewModels ()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        _binding = ActivitySettingBinding.inflate(layoutInflater)
+        binding = ActivitySettingBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        setToolbar(getString(R.string.setting))
+
+        setSupportActionBar(binding.toolbarSetting)
+        supportActionBar?.apply {
+            setDisplayShowHomeEnabled(true)
+            setDisplayHomeAsUpEnabled(true)
+            this.title = getString(R.string.setting)
+        }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -55,19 +59,5 @@ class SettingActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListe
     override fun onSupportNavigateUp(): Boolean {
         onBackPressed()
         return true
-    }
-
-    override fun onDestroy() {
-        _binding = null
-        super.onDestroy()
-    }
-
-    private fun setToolbar(title: String) {
-        setSupportActionBar(binding.toolbarSetting)
-        supportActionBar?.apply {
-            setDisplayShowHomeEnabled(true)
-            setDisplayHomeAsUpEnabled(true)
-            this.title = title
-        }
     }
 }

@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -29,15 +28,13 @@ import kotlinx.coroutines.launch
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
-    private var _binding: ActivityMainBinding? = null
-    private val binding get() = _binding!!
+    private lateinit var binding: ActivityMainBinding
 
     private val mainViewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        _binding = ActivityMainBinding.inflate(layoutInflater)
+        binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbarHome)
@@ -53,21 +50,47 @@ class MainActivity : AppCompatActivity() {
                 }
                 launch {
                     mainViewModel.users.collect { result ->
-                        showSearchingResult(result)
+                        when (result) {
+                            is Result.Loading -> {
+                                binding.pbLoading.visibility = View.VISIBLE
+                                binding.rvUsers.visibility = View.GONE
+                            }
+                            is Result.Error -> {
+                                binding.pbLoading.visibility = View.GONE
+                                binding.rvUsers.visibility = View.VISIBLE
+                            }
+                            is Result.Success -> {
+                                val listUserAdapter = UserAdapter(result.data)
+
+                                binding.rvUsers.apply {
+                                    layoutManager = LinearLayoutManager(this@MainActivity)
+                                    adapter = listUserAdapter
+                                    setHasFixedSize(true)
+                                }
+
+                                listUserAdapter.setOnItemClickCallback(object :
+                                    UserAdapter.OnItemClickCallback {
+                                    override fun onItemClicked(user: SimpleUser) {
+                                        Intent(this@MainActivity, DetailUserActivity::class.java).apply {
+                                            putExtra(EXTRA_DETAIL, user.login)
+                                        }.also {
+                                            startActivity(it)
+                                        }
+                                    }
+
+                                })
+                                binding.pbLoading.visibility = View.GONE
+                                binding.rvUsers.visibility = View.VISIBLE
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-    }
-
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        val inflater = menuInflater
-        inflater.inflate(R.menu.home_menu, menu)
-
+        menuInflater.inflate(R.menu.home_menu, menu)
         val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
         val searchView = menu.findItem(R.id.search).actionView as SearchView
 
@@ -91,72 +114,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.favorite -> {
-                Intent(this@MainActivity, FavoriteActivity::class.java).also {
-                    startActivity(it)
-                }
-            }
-            R.id.setting -> {
-                Intent(this@MainActivity, SettingActivity::class.java).also {
-                    startActivity(it)
-                }
-            }
+            R.id.favorite -> startActivity(Intent(this@MainActivity, FavoriteActivity::class.java))
+            R.id.setting -> startActivity(Intent(this@MainActivity, SettingActivity::class.java))
         }
         return super.onOptionsItemSelected(item)
-    }
-
-    override fun onDestroy() {
-        _binding = null
-        super.onDestroy()
-    }
-
-    private fun errorOccurred() {
-        Toast.makeText(this@MainActivity, "An Error is Occurred", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun showLoading(isLoading: Boolean) {
-        if (isLoading) {
-            binding.pbLoading.visibility = View.VISIBLE
-            binding.rvUsers.visibility = View.GONE
-        } else {
-            binding.pbLoading.visibility = View.GONE
-            binding.rvUsers.visibility = View.VISIBLE
-        }
-    }
-
-    private fun showSearchingResult(result: Result<ArrayList<SimpleUser>>) {
-        when (result) {
-            is Result.Loading -> showLoading(true)
-            is Result.Error -> {
-                errorOccurred()
-                showLoading(false)
-            }
-            is Result.Success -> {
-                val listUserAdapter = UserAdapter(result.data)
-
-                binding.rvUsers.apply {
-                    layoutManager = LinearLayoutManager(this@MainActivity)
-                    adapter = listUserAdapter
-                    setHasFixedSize(true)
-                }
-
-                listUserAdapter.setOnItemClickCallback(object :
-                    UserAdapter.OnItemClickCallback {
-                    override fun onItemClicked(user: SimpleUser) {
-                        goToDetailUser(user)
-                    }
-
-                })
-                showLoading(false)
-            }
-        }
-    }
-
-    private fun goToDetailUser(user: SimpleUser) {
-        Intent(this@MainActivity, DetailUserActivity::class.java).apply {
-            putExtra(EXTRA_DETAIL, user.login)
-        }.also {
-            startActivity(it)
-        }
     }
 }

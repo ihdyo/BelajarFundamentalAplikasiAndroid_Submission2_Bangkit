@@ -17,7 +17,6 @@ import com.ihdyo.githubuser.R
 import com.ihdyo.githubuser.ui.adapter.PagerAdapter
 import com.ihdyo.githubuser.data.Result
 import com.ihdyo.githubuser.data.local.UserEntity
-import com.ihdyo.githubuser.data.remote.response.User
 import com.ihdyo.githubuser.databinding.ActivityDetailBinding
 import com.ihdyo.githubuser.ui.viewmodel.DetailViewModel
 import com.ihdyo.githubuser.util.Helper.Companion.setAndVisible
@@ -28,8 +27,7 @@ import kotlinx.coroutines.launch
 @Suppress("DEPRECATION")
 @AndroidEntryPoint
 class DetailUserActivity : AppCompatActivity(), View.OnClickListener {
-    private var _binding: ActivityDetailBinding? = null
-    private val binding get() = _binding!!
+    private lateinit var binding: ActivityDetailBinding
     private var username: String? = null
     private var profileUrl: String? = null
     private var userDetail: UserEntity? = null
@@ -38,22 +36,82 @@ class DetailUserActivity : AppCompatActivity(), View.OnClickListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        _binding = ActivityDetailBinding.inflate(layoutInflater)
+        binding = ActivityDetailBinding.inflate(layoutInflater)
         username = intent.extras?.get(EXTRA_DETAIL) as String
         setContentView(binding.root)
-        setViewPager()
-        setToolbar(getString(R.string.profile))
+
+        val viewPager: ViewPager2 = binding.viewPager
+        val tabs: TabLayout = binding.tabs
+        viewPager.adapter = PagerAdapter(this, username!!)
+        TabLayoutMediator(tabs, viewPager) { tab, position ->
+            tab.text = resources.getString(TAB_TITLES[position])
+        }.attach()
+
+        setSupportActionBar(binding.toolbarDetail)
+        binding.collapsingToolbar.isTitleEnabled = false
+        supportActionBar?.apply {
+            setDisplayShowHomeEnabled(true)
+            setDisplayHomeAsUpEnabled(true)
+            this.title = getString(R.string.profile)
+        }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     detailViewModel.userDetail.collect { result ->
-                        onDetailReceived(result)
+                        with(binding) {
+                            when (result) {
+                                is Result.Loading -> {
+                                    pbLoading.visibility = View.VISIBLE
+                                    appBarLayout.visibility = View.INVISIBLE
+                                    viewPager.visibility = View.INVISIBLE
+                                    fabFavorite.visibility = View.GONE
+                                }
+                                is Result.Error -> {
+                                    userDetailContainer.visibility = View.INVISIBLE
+                                    tabs.visibility = View.INVISIBLE
+                                    viewPager.visibility = View.INVISIBLE
+                                    pbLoading.visibility = View.GONE
+                                    appBarLayout.visibility = View.VISIBLE
+                                    viewPager.visibility = View.VISIBLE
+                                    fabFavorite.visibility = View.VISIBLE
+                                    Toast.makeText(this@DetailUserActivity, result.error, Toast.LENGTH_SHORT).show()
+                                }
+                                is Result.Success -> {
+                                    result.data.let { user ->
+                                        tvUsername.text = user.login
+                                        tvRepositories.text = user.publicRepos.toString()
+                                        tvGists.text = user.publicGists.toString()
+                                        tvFollowers.text = user.followers.toString()
+                                        tvFollowing.text = user.following.toString()
+
+                                        tvName.setAndVisible(user.name)
+                                        tvBio.setAndVisible(user.bio)
+                                        tvCompany.setAndVisible(user.company)
+                                        tvLocation.setAndVisible(user.location)
+                                        tvBlog.setAndVisible(user.blog)
+                                        ivProfile.setImageGlide(this@DetailUserActivity, user.avatarUrl)
+
+                                        val userEntity = UserEntity(user.login, user.avatarUrl, true)
+                                        userDetail = userEntity
+                                        profileUrl = user.htmlUrl
+                                    }
+                                    pbLoading.visibility = View.GONE
+                                    appBarLayout.visibility = View.VISIBLE
+                                    viewPager.visibility = View.VISIBLE
+                                    fabFavorite.visibility = View.VISIBLE
+                                }
+                            }
+                        }
                     }
                 }
                 launch {
                     detailViewModel.isFavorite(username ?: "").collect { state ->
-                        isFavorite(state)
+                        if (state) {
+                            binding.fabFavorite.setImageResource(R.drawable.heart_fill)
+                        } else {
+                            binding.fabFavorite.setImageResource(R.drawable.heart)
+                        }
                         isFavorite = state
                     }
                 }
@@ -66,10 +124,6 @@ class DetailUserActivity : AppCompatActivity(), View.OnClickListener {
         }
         binding.btnOpen.setOnClickListener(this)
         binding.fabFavorite.setOnClickListener(this)
-    }
-
-    override fun onStart() {
-        super.onStart()
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -89,11 +143,11 @@ class DetailUserActivity : AppCompatActivity(), View.OnClickListener {
             R.id.fab_favorite -> {
                 if (isFavorite == true) {
                     userDetail?.let { detailViewModel.deleteFromFavorite(it) }
-                    isFavorite(false)
+                    binding.fabFavorite.setImageResource(R.drawable.heart)
                     Toast.makeText(this, getString(R.string.deleted_from_favorite), Toast.LENGTH_SHORT).show()
                 } else {
                     userDetail?.let { detailViewModel.addToFavorite(it) }
-                    isFavorite(true)
+                    binding.fabFavorite.setImageResource(R.drawable.heart_fill)
                     Toast.makeText(this, getString(R.string.added_to_favorite), Toast.LENGTH_SHORT).show()
                 }
             }
@@ -101,108 +155,10 @@ class DetailUserActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     override fun onDestroy() {
-        _binding = null
         username = null
         profileUrl = null
         isFavorite = null
         super.onDestroy()
-    }
-
-    private fun onDetailReceived(result: Result<User>) {
-        when (result) {
-            is Result.Loading -> showLoading(true)
-            is Result.Error -> {
-                errorOccurred()
-                showLoading(false)
-                Toast.makeText(this, result.error, Toast.LENGTH_SHORT).show()
-            }
-            is Result.Success -> {
-                result.data.let { user ->
-                    parseUserDetail(user)
-
-                    val userEntity = UserEntity(
-                        user.login,
-                        user.avatarUrl,
-                        true
-                    )
-                    userDetail = userEntity
-                    profileUrl = user.htmlUrl
-                }
-                showLoading(false)
-            }
-        }
-    }
-
-    private fun isFavorite(favorite: Boolean) {
-        if (favorite) {
-            binding.fabFavorite.setImageResource(R.drawable.heart_fill)
-        } else {
-            binding.fabFavorite.setImageResource(R.drawable.heart)
-        }
-    }
-
-    private fun errorOccurred() {
-        binding.apply {
-            userDetailContainer.visibility = View.INVISIBLE
-            tabs.visibility = View.INVISIBLE
-            viewPager.visibility = View.INVISIBLE
-        }
-    }
-
-    private fun setToolbar(title: String) {
-        setSupportActionBar(binding.toolbarDetail)
-        binding.collapsingToolbar.isTitleEnabled = false
-        supportActionBar?.apply {
-            setDisplayShowHomeEnabled(true)
-            setDisplayHomeAsUpEnabled(true)
-            this.title = title
-        }
-    }
-
-    private fun setViewPager() {
-        val viewPager: ViewPager2 = binding.viewPager
-        val tabs: TabLayout = binding.tabs
-
-        viewPager.adapter = PagerAdapter(this, username!!)
-
-        TabLayoutMediator(tabs, viewPager) { tab, position ->
-            tab.text = resources.getString(TAB_TITLES[position])
-        }.attach()
-    }
-
-    private fun showLoading(isLoading: Boolean) {
-        if (isLoading) {
-            binding.apply {
-                pbLoading.visibility = View.VISIBLE
-                appBarLayout.visibility = View.INVISIBLE
-                viewPager.visibility = View.INVISIBLE
-                fabFavorite.visibility = View.GONE
-            }
-        } else {
-            binding.apply {
-                pbLoading.visibility = View.GONE
-                appBarLayout.visibility = View.VISIBLE
-                viewPager.visibility = View.VISIBLE
-                fabFavorite.visibility = View.VISIBLE
-            }
-        }
-    }
-
-    private fun parseUserDetail(user: User) {
-        binding.apply {
-            tvUsername.text = user.login
-            tvRepositories.text = user.publicRepos.toString()
-            tvGists.text = user.publicGists.toString()
-            tvFollowers.text = user.followers.toString()
-            tvFollowing.text = user.following.toString()
-
-            tvName.setAndVisible(user.name)
-            tvBio.setAndVisible(user.bio)
-            tvCompany.setAndVisible(user.company)
-            tvLocation.setAndVisible(user.location)
-            tvBlog.setAndVisible(user.blog)
-            ivProfile.setImageGlide(this@DetailUserActivity, user.avatarUrl)
-        }
     }
 
     companion object {

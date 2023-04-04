@@ -21,17 +21,14 @@ import kotlinx.coroutines.launch
 @Suppress("DEPRECATION")
 @AndroidEntryPoint
 class FollowersFragment : Fragment() {
-
-    private var _binding: FragmentFollowersBinding? = null
-    private val binding get() = _binding!!
-
+    private lateinit var binding: FragmentFollowersBinding
     private val followersViewModel: FollowersViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentFollowersBinding.inflate(layoutInflater, container, false)
+        binding = FragmentFollowersBinding.inflate(layoutInflater, container, false)
         return binding.root
     }
 
@@ -53,56 +50,34 @@ class FollowersFragment : Fragment() {
         }
     }
 
-    override fun onDestroy() {
-        _binding = null
-        super.onDestroy()
-    }
-
     private fun onFollowersResultReceived(result: Result<ArrayList<SimpleUser>>) {
         when (result) {
-            is Result.Loading -> showLoading(true)
-            is Result.Error -> {
-                showLoading(false)
-            }
+            is Result.Loading -> binding.pbLoading.visibility = View.VISIBLE
+            is Result.Error -> binding.pbLoading.visibility = View.GONE
             is Result.Success -> {
-                showFollowers(result.data)
-                showLoading(false)
+                if (result.data.size > 0) {
+                    val linearLayoutManager = LinearLayoutManager(activity)
+                    val listAdapter = UserAdapter(result.data)
+
+                    binding.rvUsers.apply {
+                        layoutManager = linearLayoutManager
+                        adapter = listAdapter
+                        setHasFixedSize(true)
+                    }
+
+                    listAdapter.setOnItemClickCallback(object :
+                        UserAdapter.OnItemClickCallback {
+                        override fun onItemClicked(user: SimpleUser) {
+                            Intent(activity, DetailUserActivity::class.java).apply {
+                                putExtra(DetailUserActivity.EXTRA_DETAIL, user.login)
+                            }.also {
+                                startActivity(it)
+                            }
+                        }
+                    })
+                } else binding.tvStatus.visibility = View.VISIBLE
+                binding.pbLoading.visibility = View.GONE
             }
         }
     }
-
-    private fun showFollowers(users: ArrayList<SimpleUser>) {
-        if (users.size > 0) {
-            val linearLayoutManager = LinearLayoutManager(activity)
-            val listAdapter = UserAdapter(users)
-
-            binding.rvUsers.apply {
-                layoutManager = linearLayoutManager
-                adapter = listAdapter
-                setHasFixedSize(true)
-            }
-
-            listAdapter.setOnItemClickCallback(object :
-                UserAdapter.OnItemClickCallback {
-                override fun onItemClicked(user: SimpleUser) {
-                    goToDetailUser(user)
-                }
-
-            })
-        } else binding.tvStatus.visibility = View.VISIBLE
-    }
-
-    private fun showLoading(isLoading: Boolean) {
-        if (isLoading) binding.pbLoading.visibility = View.VISIBLE
-        else binding.pbLoading.visibility = View.GONE
-    }
-
-    private fun goToDetailUser(user: SimpleUser) {
-        Intent(activity, DetailUserActivity::class.java).apply {
-            putExtra(DetailUserActivity.EXTRA_DETAIL, user.login)
-        }.also {
-            startActivity(it)
-        }
-    }
-
 }
