@@ -1,7 +1,9 @@
-package com.ihdyo.githubuser.data.local
+package com.ihdyo.githubuser.data.module
 
 import android.content.Context
 import androidx.room.Room
+import com.ihdyo.githubuser.data.local.UserDao
+import com.ihdyo.githubuser.data.local.UserDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

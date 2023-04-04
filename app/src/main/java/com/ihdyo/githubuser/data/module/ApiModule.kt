@@ -1,4 +1,4 @@
-package com.ihdyo.githubuser.data.api
+package com.ihdyo.githubuser.data.module
 
 import com.ihdyo.githubuser.data.remote.ApiConfig
 import com.ihdyo.githubuser.data.remote.ApiService

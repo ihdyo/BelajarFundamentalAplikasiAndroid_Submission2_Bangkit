@@ -1,9 +1,10 @@
-package com.ihdyo.githubuser.data
+package com.ihdyo.githubuser.data.module
 
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import com.ihdyo.githubuser.data.AppPreferences
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
